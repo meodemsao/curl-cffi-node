@@ -1,7 +1,11 @@
 {
   "name": "curl-cffi-node",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Node.js binding for curl-impersonate via napi-rs. HTTP client with browser TLS/JA3/HTTP2 fingerprint impersonation.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meodemsao/curl-cffi-node.git"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
