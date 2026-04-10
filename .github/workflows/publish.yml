@@ -146,7 +146,10 @@ jobs:
           echo "Node.js dir: $NODE_DIR"
           gendef "$NODE_DIR/node.exe"
           dlltool -d node.def -l "$NODE_DIR/libnode.a" -D node.exe
-          echo "Created libnode.a"
+          # Napi-build explicitly checks for "libnode.dll" when building on GNU.
+          # We just copy node.exe as libnode.dll to satisfy its existence check. MinGW will link to libnode.a!
+          cp "$NODE_DIR/node.exe" "$NODE_DIR/libnode.dll"
+          echo "Created libnode.a and libnode.dll"
           # Build with MinGW toolchain
           npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-gnu --output-dir .
 
