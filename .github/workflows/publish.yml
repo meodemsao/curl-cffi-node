@@ -97,34 +97,9 @@ jobs:
         run: |
           npm ci || (npm cache clean --force && npm install)
 
-      - name: Setup MSYS2 (Windows)
-        if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          path-type: inherit
-          update: false
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-go
-            autoconf
-            automake
-            libtool
-            make
-            pkg-config
-
-      - name: Workaround MinGW make conflict
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          rm -f /c/msys64/mingw64/bin/make.exe || true
-          rm -f /c/msys64/mingw64/bin/mingw32-make.exe || true
-
       - name: Setup Rust target (Windows)
         if: runner.os == 'Windows'
-        run: rustup target add x86_64-pc-windows-gnu
+        run: rustup target add x86_64-pc-windows-msvc
 
       - name: Setup build tools
         if: runner.os != 'Windows'
@@ -138,21 +113,9 @@ jobs:
 
       - name: Build native module (Windows)
         if: runner.os == 'Windows'
-        env:
-          MSYS: winsymlinks:native
-        shell: msys2 {0}
+        shell: bash
         run: |
-          # Create Node.js import library for GNU linker
-          NODE_DIR=$(dirname "$(which node)")
-          echo "Node.js dir: $NODE_DIR"
-          gendef "$NODE_DIR/node.exe"
-          dlltool -d node.def -l "$NODE_DIR/libnode.a" -D node.exe
-          # Napi-build explicitly checks for "libnode.dll" when building on GNU.
-          # We just copy node.exe as libnode.dll to satisfy its existence check. MinGW will link to libnode.a!
-          cp "$NODE_DIR/node.exe" "$NODE_DIR/libnode.dll"
-          echo "Created libnode.a and libnode.dll"
-          # Build with MinGW toolchain
-          npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-gnu --output-dir .
+          npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-msvc --output-dir .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

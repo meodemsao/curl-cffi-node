@@ -5,6 +5,12 @@ use std::process::Command;
 fn main() {
     napi_build::setup();
 
+    let is_windows = cfg!(target_os = "windows");
+    if is_windows {
+        download_and_link_prebuilt_windows();
+        return;
+    }
+
     let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let project_root = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
         .parent()
@@ -396,6 +402,82 @@ fn link_curl_libs() {
             println!("cargo:rustc-link-lib=pthread");
         }
         _ => {}
+    }
+}
+
+fn download_and_link_prebuilt_windows() {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let prebuilt_dir = out_dir.join("prebuilt");
+
+    if !prebuilt_dir.exists() {
+        std::fs::create_dir_all(&prebuilt_dir).unwrap();
+
+        let tarball = prebuilt_dir.join("libcurl-impersonate.tar.gz");
+
+        println!("cargo:warning=Downloading prebuilt libcurl-impersonate for Windows...");
+        let download_cmd = Command::new("curl")
+            .args(&[
+                "-L",
+                "https://github.com/lexiforest/curl-impersonate/releases/download/v1.5.2/libcurl-impersonate-v1.5.2.x86_64-win32.tar.gz",
+                "-o",
+                tarball.to_str().unwrap(),
+            ])
+            .status()
+            .unwrap();
+
+        if !download_cmd.success() {
+            panic!("Failed to download prebuilt curl-impersonate");
+        }
+
+        println!("cargo:warning=Extracting prebuilt libcurl-impersonate...");
+        let extract_cmd = Command::new("tar")
+            .current_dir(&prebuilt_dir)
+            .args(&["-xzf", "libcurl-impersonate.tar.gz"])
+            .status()
+            .unwrap();
+
+        if !extract_cmd.success() {
+            panic!("Failed to extract prebuilt curl-impersonate");
+        }
+    }
+
+    println!(
+        "cargo:rustc-link-search=native={}",
+        prebuilt_dir.join("lib").display()
+    );
+
+    let libs = [
+        "libcurl-impersonate",
+        "zstd",
+        "zlib",
+        "ssl",
+        "nghttp2",
+        "nghttp3",
+        "ngtcp2",
+        "ngtcp2_crypto_boringssl",
+        "crypto",
+        "brotlienc",
+        "brotlidec",
+        "brotlicommon",
+    ];
+    for lib in libs {
+        println!("cargo:rustc-link-lib=static={}", lib);
+    }
+    
+    // Windows system libs
+    let sys_libs = [
+        "Crypt32",
+        "Secur32",
+        "wldap32",
+        "Normaliz",
+        "iphlpapi",
+        "ws2_32",
+        "advapi32",
+        "bcrypt",
+        "userenv",
+    ];
+    for lib in sys_libs {
+        println!("cargo:rustc-link-lib=dylib={}", lib);
     }
 }
 

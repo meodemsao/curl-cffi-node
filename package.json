@@ -1,6 +1,6 @@
 {
   "name": "curl-cffi-node",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Node.js binding for curl-impersonate via napi-rs. HTTP client with browser TLS/JA3/HTTP2 fingerprint impersonation.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -24,7 +24,7 @@
       "aarch64-unknown-linux-gnu",
       "x86_64-apple-darwin",
       "aarch64-apple-darwin",
-      "x86_64-pc-windows-gnu"
+      "x86_64-pc-windows-msvc"
     ]
   },
   "files": [
