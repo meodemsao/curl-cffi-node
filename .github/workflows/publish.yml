@@ -160,6 +160,7 @@ jobs:
       - name: Publish platform packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for dir in npm/*/; do
             if [ -f "$dir/package.json" ]; then
@@ -173,6 +174,7 @@ jobs:
       - name: Publish main package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Create GitHub Release
