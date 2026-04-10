@@ -139,6 +139,8 @@ jobs:
 
       - name: Build native module (Windows)
         if: runner.os == 'Windows'
+        env:
+          MSYS: winsymlinks:nativestrict
         shell: msys2 {0}
         run: |
           # Create Node.js import library for GNU linker
