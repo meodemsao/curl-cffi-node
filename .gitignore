@@ -35,6 +35,3 @@ _bmad/
 # Agent/IDE configs
 .agent/
 .claude/
-
-# External submodules/dependencies
-curl-impersonate/
