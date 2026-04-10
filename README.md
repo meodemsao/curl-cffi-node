@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178c6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos-lightgrey.svg)](#supported-platforms)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)](#supported-platforms)
 
 Bypass TLS fingerprinting, JA3 detection, and HTTP/2 fingerprinting used by Cloudflare, Akamai, and other anti-bot systems. `curl-cffi-node` impersonates real browsers at the TLS and HTTP/2 protocol level — not just User-Agent strings.
 
@@ -590,6 +590,7 @@ const r = await get('https://httpbin.org/get', { impersonate: 'chrome116' });
 | Linux | ARM64 (glibc) | `@curl-cffi-node/linux-arm64-gnu` |
 | macOS | x64 (Intel) | `@curl-cffi-node/darwin-x64` |
 | macOS | ARM64 (M1/M2/M3) | `@curl-cffi-node/darwin-arm64` |
+| Windows | x64 (GNU) | `@curl-cffi-node/win32-x64-gnu` |
 
 Binaries are automatically selected at install time via `optionalDependencies`.
 

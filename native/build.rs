@@ -73,13 +73,13 @@ fn main() {
 
         // Run autoconf if configure doesn't exist
         if !configure.exists() {
-            let status = Command::new("autoreconf")
-                .args(["-fi"])
-                .current_dir(&curl_imp_dir)
-                .env("PATH", &augmented_path)
-                .status()
-                .expect("autoreconf failed. Install: brew install autoconf automake");
-            assert!(status.success(), "autoreconf failed");
+            run_shell_cmd(
+                "autoreconf",
+                &["-fi"],
+                &curl_imp_dir,
+                &augmented_path,
+                cross_env.as_ref(),
+            );
         }
 
         let mut configure_args = vec![format!(
@@ -95,22 +95,15 @@ fn main() {
             }
         }
 
+        let configure_str = configure.to_str().unwrap().to_string();
         let args_refs: Vec<&str> = configure_args.iter().map(|s| s.as_str()).collect();
-        let mut cmd = Command::new(configure.to_str().unwrap());
-        cmd.args(&args_refs)
-            .current_dir(&curl_imp_dir)
-            .env("PATH", &augmented_path);
-
-        // Set cross-compile env vars
-        if let Some(ref env) = cross_env {
-            cmd.env("CC", &env.cc);
-            cmd.env("CXX", &env.cxx);
-            cmd.env("AR", &env.ar);
-            println!("cargo:warning=CC={} CXX={} AR={}", env.cc, env.cxx, env.ar);
-        }
-
-        let status = cmd.status().expect("Failed to run configure");
-        assert!(status.success(), "configure failed");
+        run_shell_cmd(
+            &configure_str,
+            &args_refs,
+            &curl_imp_dir,
+            &augmented_path,
+            cross_env.as_ref(),
+        );
     }
 
     // Step 2: Build using GNU Make 4.0+ (curl-impersonate uses .ONESHELL)
@@ -129,33 +122,14 @@ fn main() {
     if !curl_lib_sentinel.exists() && !curl_lib_sentinel_alt.exists() {
         println!("cargo:warning=Building curl-impersonate (this may take several minutes on first build)...");
         let make_cmd = find_make();
-
         let num_jobs = num_cpus();
-        let mut cmd = Command::new(&make_cmd);
-        cmd.args(["build", &format!("SUBJOBS={}", num_jobs)])
-            .current_dir(&curl_imp_dir)
-            .env("PATH", &augmented_path);
-
-        // Pass cross-compile env to make as well
-        if let Some(ref env) = cross_env {
-            cmd.env("CC", &env.cc);
-            cmd.env("CXX", &env.cxx);
-            cmd.env("AR", &env.ar);
-        }
-
-        let output = cmd
-            .output()
-            .expect("Failed to run make. Install: brew install make cmake ninja golang");
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            panic!(
-                "make build failed!\n--- stdout (last 2000 chars) ---\n{}\n--- stderr (last 2000 chars) ---\n{}",
-                &stdout[stdout.len().saturating_sub(2000)..],
-                &stderr[stderr.len().saturating_sub(2000)..]
-            );
-        }
+        run_shell_cmd(
+            &make_cmd,
+            &["build", &format!("SUBJOBS={}", num_jobs)],
+            &curl_imp_dir,
+            &augmented_path,
+            cross_env.as_ref(),
+        );
 
         // Remove dynamic libraries to force static linking
         remove_dynamic_libs(&curl_imp_dir);
@@ -183,7 +157,7 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 }
 
-/// Remove all dynamic library files (.dylib, .so) from the build tree
+/// Remove all dynamic library files (.dylib, .so, .dll) from the build tree
 /// to force the linker to use static libraries only.
 fn remove_dynamic_libs(build_dir: &Path) {
     fn remove_recursive(dir: &Path) {
@@ -196,6 +170,7 @@ fn remove_dynamic_libs(build_dir: &Path) {
                     if name.ends_with(".dylib")
                         || name.ends_with(".so")
                         || name.contains(".so.")
+                        || name.ends_with(".dll")
                         || name.ends_with(".la")
                     {
                         let _ = std::fs::remove_file(&path);
@@ -208,19 +183,91 @@ fn remove_dynamic_libs(build_dir: &Path) {
     println!("cargo:warning=Removed dynamic libraries to force static linking");
 }
 
+/// Run a shell command, using bash on Windows (MSYS2) and direct execution on Unix
+fn run_shell_cmd(cmd: &str, args: &[&str], cwd: &Path, path: &str, cross_env: Option<&CrossEnv>) {
+    let is_windows = cfg!(target_os = "windows");
+
+    let mut command = if is_windows {
+        // On Windows, run through MSYS2 bash
+        let bash = find_msys2_bash();
+        let full_cmd = format!("{} {}", cmd.replace('\\', "/"), args.join(" "));
+        let mut c = Command::new(&bash);
+        c.args(["-lc", &full_cmd]);
+        c
+    } else {
+        let mut c = Command::new(cmd);
+        c.args(args);
+        c
+    };
+
+    command.current_dir(cwd).env("PATH", path);
+
+    if let Some(env) = cross_env {
+        command.env("CC", &env.cc);
+        command.env("CXX", &env.cxx);
+        command.env("AR", &env.ar);
+        println!("cargo:warning=CC={} CXX={} AR={}", env.cc, env.cxx, env.ar);
+    }
+
+    let output = command
+        .output()
+        .unwrap_or_else(|e| panic!("Failed to run '{}': {}", cmd, e));
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        panic!(
+            "'{}' failed!\n--- stdout (last 2000 chars) ---\n{}\n--- stderr (last 2000 chars) ---\n{}",
+            cmd,
+            &stdout[stdout.len().saturating_sub(2000)..],
+            &stderr[stderr.len().saturating_sub(2000)..]
+        );
+    }
+}
+
+/// Find MSYS2 bash on Windows
+fn find_msys2_bash() -> String {
+    for path in &[
+        "C:\\msys64\\usr\\bin\\bash.exe",
+        "C:\\msys64\\bin\\bash.exe",
+        "D:\\msys64\\usr\\bin\\bash.exe",
+    ] {
+        if Path::new(path).exists() {
+            return path.to_string();
+        }
+    }
+    // Fallback: try PATH
+    "bash".to_string()
+}
+
 /// Augment the PATH with common tool locations
 fn augment_path() -> String {
     let current_path = env::var("PATH").unwrap_or_default();
-    let extra_paths = [
-        "/opt/homebrew/bin",
-        "/opt/homebrew/opt/go/bin",
-        "/opt/homebrew/opt/make/libexec/gnubin",
-        "/usr/local/bin",
-        "/usr/local/go/bin",
-    ];
-    let mut parts: Vec<&str> = extra_paths.to_vec();
+    let separator = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
+
+    let extra_paths: Vec<&str> = if cfg!(target_os = "windows") {
+        vec![
+            "C:\\msys64\\mingw64\\bin",
+            "C:\\msys64\\usr\\bin",
+            "C:\\msys64\\bin",
+        ]
+    } else {
+        vec![
+            "/opt/homebrew/bin",
+            "/opt/homebrew/opt/go/bin",
+            "/opt/homebrew/opt/make/libexec/gnubin",
+            "/usr/local/bin",
+            "/usr/local/go/bin",
+        ]
+    };
+
+    let mut parts: Vec<&str> = extra_paths;
     parts.push(&current_path);
-    parts.join(":")
+    parts.join(separator)
 }
 
 /// Link pre-built static libraries (used in CI or when prebuilt/ directory exists)
@@ -345,6 +392,8 @@ fn link_curl_libs() {
             println!("cargo:rustc-link-lib=crypt32");
             println!("cargo:rustc-link-lib=advapi32");
             println!("cargo:rustc-link-lib=bcrypt");
+            println!("cargo:rustc-link-lib=stdc++");
+            println!("cargo:rustc-link-lib=pthread");
         }
         _ => {}
     }
@@ -413,6 +462,7 @@ fn autotools_host_triple(target: &str) -> Option<String> {
         "x86_64-unknown-linux-musl" => Some("x86_64-linux-musl".to_string()),
         "aarch64-apple-darwin" => Some("aarch64-apple-darwin".to_string()),
         "x86_64-apple-darwin" => Some("x86_64-apple-darwin".to_string()),
+        "x86_64-pc-windows-gnu" => Some("x86_64-w64-mingw32".to_string()),
         _ => None,
     }
 }
