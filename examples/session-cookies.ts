@@ -25,11 +25,11 @@ async function main() {
   // ── Cookies are sent automatically ──
   console.log('\n── Verify Cookies Sent ──');
   const r = await session.get('https://httpbin.org/cookies');
-  console.log('Server sees:', r.json().cookies);
+  console.log('Server sees:', (r.json() as any).cookies);
 
   // ── Export cookies for persistence ──
   console.log('\n── Export Cookies ──');
-  const exported = session.exportCookies();
+  const exported = session.exportCookies() as string[];
   console.log('Exported:', exported);
 
   // ── Import into a new session ──
@@ -39,7 +39,7 @@ async function main() {
     cookies: exported,
   });
   const r2 = await session2.get('https://httpbin.org/cookies');
-  console.log('New session sees:', r2.json().cookies);
+  console.log('New session sees:', (r2.json() as any).cookies);
 
   // ── Clear cookies ──
   session.clearCookies();

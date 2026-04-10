@@ -20,7 +20,7 @@ async function main() {
   });
   console.log('Status:', r1.status);
   console.log('URL:', r1.url);
-  console.log('Body:', JSON.stringify(r1.json().args, null, 2));
+  console.log('Body:', JSON.stringify((r1.json() as any).args, null, 2));
 
   // ── POST with JSON ──
   console.log('\n── POST with JSON ──');
@@ -28,7 +28,7 @@ async function main() {
     data: { username: 'demo', library: 'curl-cffi-node' },
   });
   console.log('Status:', r2.status);
-  console.log('Sent JSON:', r2.json().json);
+  console.log('Sent JSON:', (r2.json() as any).json);
 
   // ── Response Timing ──
   console.log('\n── Response Timing ──');
