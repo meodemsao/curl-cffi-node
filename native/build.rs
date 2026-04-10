@@ -137,20 +137,24 @@ fn main() {
 
         // Remove dynamic libraries to force static linking
         remove_dynamic_libs(&curl_imp_dir);
+        remove_dynamic_libs(&build_dir);
     } else {
         println!("cargo:warning=curl-impersonate already built, skipping...");
         // Still ensure dynamic libs are removed
         remove_dynamic_libs(&curl_imp_dir);
+        remove_dynamic_libs(&build_dir);
     }
 
     // Step 3: Find and link the built libraries
-    // curl-impersonate builds into its own directory structure
-    // Try curl_imp_dir first, then build_dir as fallback
-    let curl_build_out = curl_imp_dir.join("build");
-    if curl_build_out.exists() {
-        link_from_build_dir(&curl_build_out);
-    } else {
-        link_from_build_dir(&curl_imp_dir);
+    // Search all possible build output locations
+    for search_dir in &[
+        curl_imp_dir.join("build"),
+        curl_imp_dir.clone(),
+        build_dir.clone(),
+    ] {
+        if search_dir.exists() {
+            link_from_build_dir(search_dir);
+        }
     }
 
     // Rebuild if build.rs changes

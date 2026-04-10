@@ -642,6 +642,7 @@ impl Curl {
     }
 
     /// Get the raw CURL* handle (for internal use in perform, etc.)
+    #[allow(dead_code)]
     pub(crate) fn raw(&self) -> *mut ffi::CURL {
         self.handle
     }
