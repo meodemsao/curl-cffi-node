@@ -38,9 +38,15 @@ fn main() {
     // Augment PATH for child processes
     let augmented_path = augment_path();
 
-    // Step 1: Run configure if Makefile doesn't exist
-    if !build_dir.join("Makefile").exists() {
-        println!("cargo:warning=Configuring curl-impersonate...");
+    // Detect cross-compilation
+    let target = env::var("TARGET").unwrap_or_default();
+    let host = env::var("HOST").unwrap_or_default();
+    let cross_compiling = target != host;
+    let cross_env = cross_compile_env(&target);
+
+    // Step 1: Run configure if Makefile doesn't exist in source dir
+    if !curl_imp_dir.join("Makefile").exists() {
+        println!("cargo:warning=Configuring curl-impersonate (target={}, host={})...", target, host);
         let configure = curl_imp_dir.join("configure");
 
         // Make configure executable
@@ -65,14 +71,33 @@ fn main() {
             assert!(status.success(), "autoreconf failed");
         }
 
-        let status = Command::new(configure.to_str().unwrap())
-            .args([
-                &format!("--prefix={}", build_dir.join("installed").display()),
-            ])
+        let mut configure_args = vec![
+            format!("--prefix={}", build_dir.join("installed").display()),
+        ];
+
+        // Add --host for cross-compilation
+        if cross_compiling {
+            if let Some(host_triple) = autotools_host_triple(&target) {
+                configure_args.push(format!("--host={}", host_triple));
+                println!("cargo:warning=Cross-compiling with --host={}", host_triple);
+            }
+        }
+
+        let args_refs: Vec<&str> = configure_args.iter().map(|s| s.as_str()).collect();
+        let mut cmd = Command::new(configure.to_str().unwrap());
+        cmd.args(&args_refs)
             .current_dir(&curl_imp_dir)
-            .env("PATH", &augmented_path)
-            .status()
-            .expect("Failed to run configure");
+            .env("PATH", &augmented_path);
+
+        // Set cross-compile env vars
+        if let Some(ref env) = cross_env {
+            cmd.env("CC", &env.cc);
+            cmd.env("CXX", &env.cxx);
+            cmd.env("AR", &env.ar);
+            println!("cargo:warning=CC={} CXX={} AR={}", env.cc, env.cxx, env.ar);
+        }
+
+        let status = cmd.status().expect("Failed to run configure");
         assert!(status.success(), "configure failed");
     }
 
@@ -84,15 +109,20 @@ fn main() {
         println!("cargo:warning=Building curl-impersonate (this may take several minutes on first build)...");
         let make_cmd = find_make();
 
-        // No -j flag: curl-impersonate's Makefile downloads and extracts archives
-        // in the same recipe, which causes race conditions with parallel build.
-        // SUBJOBS controls parallelism within each sub-build (BoringSSL, etc.)
         let num_jobs = num_cpus();
-        let output = Command::new(&make_cmd)
-            .args(["build", &format!("SUBJOBS={}", num_jobs)])
+        let mut cmd = Command::new(&make_cmd);
+        cmd.args(["build", &format!("SUBJOBS={}", num_jobs)])
             .current_dir(&curl_imp_dir)
-            .env("PATH", &augmented_path)
-            .output()
+            .env("PATH", &augmented_path);
+
+        // Pass cross-compile env to make as well
+        if let Some(ref env) = cross_env {
+            cmd.env("CC", &env.cc);
+            cmd.env("CXX", &env.cxx);
+            cmd.env("AR", &env.ar);
+        }
+
+        let output = cmd.output()
             .expect("Failed to run make. Install: brew install make cmake ninja golang");
 
         if !output.status.success() {
@@ -331,4 +361,47 @@ fn find_make() -> String {
         "GNU Make 4.0+ not found. curl-impersonate requires .ONESHELL.\n\
          Install: brew install make"
     );
+}
+
+// ─── Cross-compilation support ────────────────────────────────────────────
+
+struct CrossEnv {
+    cc: String,
+    cxx: String,
+    ar: String,
+}
+
+/// Map Rust target triple to autotools --host triple
+fn autotools_host_triple(target: &str) -> Option<String> {
+    match target {
+        "aarch64-unknown-linux-gnu" => Some("aarch64-linux-gnu".to_string()),
+        "aarch64-unknown-linux-musl" => Some("aarch64-linux-musl".to_string()),
+        "x86_64-unknown-linux-musl" => Some("x86_64-linux-musl".to_string()),
+        "aarch64-apple-darwin" => Some("aarch64-apple-darwin".to_string()),
+        "x86_64-apple-darwin" => Some("x86_64-apple-darwin".to_string()),
+        _ => None,
+    }
+}
+
+/// Get CC/CXX/AR for cross-compilation targets.
+/// Returns None for native compilation (use system defaults).
+fn cross_compile_env(target: &str) -> Option<CrossEnv> {
+    // Check if user already set CC explicitly
+    if env::var("CC").is_ok() {
+        return None;
+    }
+
+    match target {
+        "aarch64-unknown-linux-gnu" => Some(CrossEnv {
+            cc: "aarch64-linux-gnu-gcc".to_string(),
+            cxx: "aarch64-linux-gnu-g++".to_string(),
+            ar: "aarch64-linux-gnu-ar".to_string(),
+        }),
+        "x86_64-unknown-linux-musl" => Some(CrossEnv {
+            cc: "musl-gcc".to_string(),
+            cxx: "g++".to_string(),
+            ar: "ar".to_string(),
+        }),
+        _ => None,
+    }
 }
