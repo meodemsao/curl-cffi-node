@@ -187,9 +187,7 @@ impl CurlOpt {
             | CurlOpt::Http2WindowUpdate
             | CurlOpt::StreamWeight => OptType::Long,
 
-            CurlOpt::HttpHeader
-            | CurlOpt::ProxyHeader
-            | CurlOpt::Resolve => OptType::SList,
+            CurlOpt::HttpHeader | CurlOpt::ProxyHeader | CurlOpt::Resolve => OptType::SList,
         }
     }
 }

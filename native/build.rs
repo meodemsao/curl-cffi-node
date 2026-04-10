@@ -69,7 +69,7 @@ fn main() {
             .args([
                 &format!("--prefix={}", build_dir.join("installed").display()),
             ])
-            .current_dir(&build_dir)
+            .current_dir(&curl_imp_dir)
             .env("PATH", &augmented_path)
             .status()
             .expect("Failed to run configure");
@@ -78,8 +78,9 @@ fn main() {
 
     // Step 2: Build using GNU Make 4.0+ (curl-impersonate uses .ONESHELL)
     // Check if build is already done (sentinel: curl lib exists)
-    let curl_lib_sentinel = build_dir.join("curl-8_15_0").join("lib").join(".libs").join("libcurl-impersonate.a");
-    if !curl_lib_sentinel.exists() {
+    let curl_lib_sentinel = curl_imp_dir.join("build").join("curl-8_15_0").join("lib").join(".libs").join("libcurl-impersonate.a");
+    let curl_lib_sentinel_alt = build_dir.join("curl-8_15_0").join("lib").join(".libs").join("libcurl-impersonate.a");
+    if !curl_lib_sentinel.exists() && !curl_lib_sentinel_alt.exists() {
         println!("cargo:warning=Building curl-impersonate (this may take several minutes on first build)...");
         let make_cmd = find_make();
 
@@ -89,7 +90,7 @@ fn main() {
         let num_jobs = num_cpus();
         let output = Command::new(&make_cmd)
             .args(["build", &format!("SUBJOBS={}", num_jobs)])
-            .current_dir(&build_dir)
+            .current_dir(&curl_imp_dir)
             .env("PATH", &augmented_path)
             .output()
             .expect("Failed to run make. Install: brew install make cmake ninja golang");
@@ -105,15 +106,22 @@ fn main() {
         }
 
         // Remove dynamic libraries to force static linking
-        remove_dynamic_libs(&build_dir);
+        remove_dynamic_libs(&curl_imp_dir);
     } else {
         println!("cargo:warning=curl-impersonate already built, skipping...");
         // Still ensure dynamic libs are removed
-        remove_dynamic_libs(&build_dir);
+        remove_dynamic_libs(&curl_imp_dir);
     }
 
     // Step 3: Find and link the built libraries
-    link_from_build_dir(&build_dir);
+    // curl-impersonate builds into its own directory structure
+    // Try curl_imp_dir first, then build_dir as fallback
+    let curl_build_out = curl_imp_dir.join("build");
+    if curl_build_out.exists() {
+        link_from_build_dir(&curl_build_out);
+    } else {
+        link_from_build_dir(&curl_imp_dir);
+    }
 
     // Rebuild if build.rs changes
     println!("cargo:rerun-if-changed=build.rs");
