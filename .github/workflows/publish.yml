@@ -115,6 +115,13 @@ jobs:
             make
             pkg-config
 
+      - name: Workaround MinGW make conflict
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          rm -f /c/msys64/mingw64/bin/make.exe || true
+          rm -f /c/msys64/mingw64/bin/mingw32-make.exe || true
+
       - name: Setup Rust target (Windows)
         if: runner.os == 'Windows'
         run: rustup target add x86_64-pc-windows-gnu

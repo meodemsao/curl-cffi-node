@@ -411,7 +411,7 @@ fn num_cpus() -> usize {
 
 fn find_make() -> String {
     let cmds = if cfg!(target_os = "windows") {
-        vec!["make", "gmake"]
+        vec!["C:\\msys64\\usr\\bin\\make.exe", "make"]
     } else {
         vec!["gmake", "/opt/homebrew/bin/gmake", "/usr/local/bin/gmake", "make"]
     };
