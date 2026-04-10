@@ -52,14 +52,7 @@ export const curlVersion: () => string = nativeBinding.curlVersion as () => stri
 
 // ─── Curl Handle Class (Low-level) ──────────────────────────────────────────
 
-export const CurlOpt = nativeBinding.CurlOpt;
-export type CurlOpt = typeof CurlOpt;
-
-export const CurlInfo = nativeBinding.CurlInfo;
-export type CurlInfo = typeof CurlInfo;
-
-export const BrowserType = nativeBinding.BrowserType;
-export type BrowserType = typeof BrowserType;
+export { CurlOpt, CurlInfo, BrowserType } from './enums.js';
 
 export const Curl = nativeBinding.Curl as {
   new(): CurlHandle;

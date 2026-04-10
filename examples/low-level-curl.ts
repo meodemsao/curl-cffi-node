@@ -30,12 +30,11 @@ async function main() {
   console.log('\n── Connection Info ──');
   console.log('Effective URL:', curl.getinfo(CurlInfo.EffectiveUrl));
   console.log('Total time:   ', curl.getinfo(CurlInfo.TotalTime), 's');
-  console.log('Primary IP:   ', curl.getinfo(CurlInfo.PrimaryIp));
 
   // ── Reuse handle ──
   console.log('\n── Reuse Handle ──');
   curl.reset();
-  curl.impersonateStr('safari17_0');
+  curl.impersonate(BrowserType.Safari15_5);
   curl.setoptStr(CurlOpt.Url, 'https://httpbin.org/user-agent');
   curl.setoptLong(CurlOpt.TimeoutMs, 10000);
 
