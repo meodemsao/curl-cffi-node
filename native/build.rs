@@ -14,8 +14,16 @@ fn main() {
 
     // Check if prebuilt libs exist (CI scenario)
     let prebuilt_dir = project_root.join("prebuilt").join(target_triple());
-    if prebuilt_dir.exists() && prebuilt_dir.join("lib").join("libcurl-impersonate.a").exists() {
-        println!("cargo:warning=Using prebuilt libraries from {:?}", prebuilt_dir);
+    if prebuilt_dir.exists()
+        && prebuilt_dir
+            .join("lib")
+            .join("libcurl-impersonate.a")
+            .exists()
+    {
+        println!(
+            "cargo:warning=Using prebuilt libraries from {:?}",
+            prebuilt_dir
+        );
         link_prebuilt(&prebuilt_dir);
         return;
     }
@@ -46,7 +54,10 @@ fn main() {
 
     // Step 1: Run configure if Makefile doesn't exist in source dir
     if !curl_imp_dir.join("Makefile").exists() {
-        println!("cargo:warning=Configuring curl-impersonate (target={}, host={})...", target, host);
+        println!(
+            "cargo:warning=Configuring curl-impersonate (target={}, host={})...",
+            target, host
+        );
         let configure = curl_imp_dir.join("configure");
 
         // Make configure executable
@@ -71,9 +82,10 @@ fn main() {
             assert!(status.success(), "autoreconf failed");
         }
 
-        let mut configure_args = vec![
-            format!("--prefix={}", build_dir.join("installed").display()),
-        ];
+        let mut configure_args = vec![format!(
+            "--prefix={}",
+            build_dir.join("installed").display()
+        )];
 
         // Add --host for cross-compilation
         if cross_compiling {
@@ -103,8 +115,17 @@ fn main() {
 
     // Step 2: Build using GNU Make 4.0+ (curl-impersonate uses .ONESHELL)
     // Check if build is already done (sentinel: curl lib exists)
-    let curl_lib_sentinel = curl_imp_dir.join("build").join("curl-8_15_0").join("lib").join(".libs").join("libcurl-impersonate.a");
-    let curl_lib_sentinel_alt = build_dir.join("curl-8_15_0").join("lib").join(".libs").join("libcurl-impersonate.a");
+    let curl_lib_sentinel = curl_imp_dir
+        .join("build")
+        .join("curl-8_15_0")
+        .join("lib")
+        .join(".libs")
+        .join("libcurl-impersonate.a");
+    let curl_lib_sentinel_alt = build_dir
+        .join("curl-8_15_0")
+        .join("lib")
+        .join(".libs")
+        .join("libcurl-impersonate.a");
     if !curl_lib_sentinel.exists() && !curl_lib_sentinel_alt.exists() {
         println!("cargo:warning=Building curl-impersonate (this may take several minutes on first build)...");
         let make_cmd = find_make();
@@ -122,7 +143,8 @@ fn main() {
             cmd.env("AR", &env.ar);
         }
 
-        let output = cmd.output()
+        let output = cmd
+            .output()
             .expect("Failed to run make. Install: brew install make cmake ninja golang");
 
         if !output.status.success() {
@@ -171,8 +193,11 @@ fn remove_dynamic_libs(build_dir: &Path) {
                 if path.is_dir() {
                     remove_recursive(&path);
                 } else if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    if name.ends_with(".dylib") || name.ends_with(".so") ||
-                       name.contains(".so.") || name.ends_with(".la") {
+                    if name.ends_with(".dylib")
+                        || name.ends_with(".so")
+                        || name.contains(".so.")
+                        || name.ends_with(".la")
+                    {
                         let _ = std::fs::remove_file(&path);
                     }
                 }
@@ -211,7 +236,12 @@ fn link_from_build_dir(build_dir: &Path) {
     let boringssl_dirs: Vec<_> = std::fs::read_dir(build_dir)
         .unwrap()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_name().to_str().unwrap_or("").starts_with("boringssl"))
+        .filter(|e| {
+            e.file_name()
+                .to_str()
+                .unwrap_or("")
+                .starts_with("boringssl")
+        })
         .collect();
 
     for entry in &boringssl_dirs {
@@ -225,7 +255,9 @@ fn link_from_build_dir(build_dir: &Path) {
     // All other libraries with installed/ pattern
     for entry in std::fs::read_dir(build_dir).unwrap().filter_map(|e| e.ok()) {
         let path = entry.path();
-        if !path.is_dir() { continue; }
+        if !path.is_dir() {
+            continue;
+        }
 
         // installed/lib (nghttp2, ngtcp2, nghttp3, zlib, zstd)
         let installed = path.join("installed").join("lib");
@@ -319,9 +351,7 @@ fn link_curl_libs() {
 }
 
 fn target_triple() -> String {
-    env::var("TARGET").unwrap_or_else(|_| {
-        format!("{}-{}", env::consts::ARCH, env::consts::OS)
-    })
+    env::var("TARGET").unwrap_or_else(|_| format!("{}-{}", env::consts::ARCH, env::consts::OS))
 }
 
 fn num_cpus() -> usize {

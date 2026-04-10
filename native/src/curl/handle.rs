@@ -114,9 +114,7 @@ impl Curl {
         // SAFETY: handle is valid, c_value is a valid CString.
         // We store c_value in pinned_strings keyed by option to keep it alive.
         // The old value (if any) is dropped AFTER setopt updates the pointer.
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, opt.to_ffi(), c_value.as_ptr())
-        };
+        let code = unsafe { ffi::curl_easy_setopt(self.handle, opt.to_ffi(), c_value.as_ptr()) };
 
         // Insert replaces the old CString, which is now safe to drop because
         // libcurl's internal pointer has been updated to the new value.
@@ -141,9 +139,7 @@ impl Curl {
         }
 
         // SAFETY: handle is valid, value is a c_long
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, opt.to_ffi(), value as c_long)
-        };
+        let code = unsafe { ffi::curl_easy_setopt(self.handle, opt.to_ffi(), value as c_long) };
         self.check_code(code)
     }
 
@@ -180,16 +176,16 @@ impl Curl {
         }
 
         // SAFETY: handle is valid, slist is a valid curl_slist
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, opt.to_ffi(), slist)
-        };
+        let code = unsafe { ffi::curl_easy_setopt(self.handle, opt.to_ffi(), slist) };
 
         // Free the old slist for this option (if any) — it's no longer
         // referenced by libcurl because setopt replaced the pointer.
         let opt_key = opt.to_ffi();
         if let Some(old_slist) = self.pinned_slists.remove(&opt_key) {
             if !old_slist.is_null() {
-                unsafe { ffi::curl_slist_free_all(old_slist); }
+                unsafe {
+                    ffi::curl_slist_free_all(old_slist);
+                }
             }
         }
         self.pinned_slists.insert(opt_key, slist);
@@ -207,27 +203,23 @@ impl Curl {
             InfoType::Long => {
                 let mut value: c_long = 0;
                 // SAFETY: handle is valid, value pointer is valid
-                let code = unsafe {
-                    ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut value)
-                };
+                let code =
+                    unsafe { ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut value) };
                 self.check_code(code)?;
                 Ok(napi::Either::A(value as f64))
             }
             InfoType::Double => {
                 let mut value: f64 = 0.0;
                 // SAFETY: handle is valid, value pointer is valid
-                let code = unsafe {
-                    ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut value)
-                };
+                let code =
+                    unsafe { ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut value) };
                 self.check_code(code)?;
                 Ok(napi::Either::A(value))
             }
             InfoType::String => {
                 let mut ptr: *const std::os::raw::c_char = ptr::null();
                 // SAFETY: handle is valid, ptr is a valid pointer-to-pointer
-                let code = unsafe {
-                    ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut ptr)
-                };
+                let code = unsafe { ffi::curl_easy_getinfo(self.handle, info.to_ffi(), &mut ptr) };
                 self.check_code(code)?;
 
                 if ptr.is_null() {
@@ -252,9 +244,8 @@ impl Curl {
     #[napi]
     pub fn enable_cookies(&mut self) -> Result<()> {
         let empty = CString::new("").unwrap();
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_COOKIEFILE, empty.as_ptr())
-        };
+        let code =
+            unsafe { ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_COOKIEFILE, empty.as_ptr()) };
         self.pinned_strings.insert(ffi::CURLOPT_COOKIEFILE, empty);
         self.check_code(code)
     }
@@ -270,11 +261,7 @@ impl Curl {
 
         let mut slist_ptr: *mut ffi::curl_slist = ptr::null_mut();
         unsafe {
-            ffi::curl_easy_getinfo(
-                self.handle,
-                ffi::CURLINFO_COOKIELIST,
-                &mut slist_ptr,
-            );
+            ffi::curl_easy_getinfo(self.handle, ffi::CURLINFO_COOKIELIST, &mut slist_ptr);
         }
 
         let mut cookies = Vec::new();
@@ -317,9 +304,8 @@ impl Curl {
     #[napi]
     pub fn clear_cookies(&mut self) -> Result<()> {
         let all = CString::new("ALL").unwrap();
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_COOKIELIST, all.as_ptr())
-        };
+        let code =
+            unsafe { ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_COOKIELIST, all.as_ptr()) };
         self.check_code(code)
     }
 
@@ -333,7 +319,11 @@ impl Curl {
     /// @param browser - The BrowserType to impersonate
     /// @param default_headers - Whether to apply default browser headers (default: true)
     #[napi]
-    pub fn impersonate(&mut self, browser: BrowserType, default_headers: Option<bool>) -> Result<()> {
+    pub fn impersonate(
+        &mut self,
+        browser: BrowserType,
+        default_headers: Option<bool>,
+    ) -> Result<()> {
         let target = browser.to_target_str();
         self.impersonate_internal(target, default_headers.unwrap_or(true))
     }
@@ -418,11 +408,7 @@ impl Curl {
         // Get status code
         let mut status_code: c_long = 0;
         unsafe {
-            ffi::curl_easy_getinfo(
-                self.handle,
-                ffi::CURLINFO_RESPONSE_CODE,
-                &mut status_code,
-            );
+            ffi::curl_easy_getinfo(self.handle, ffi::CURLINFO_RESPONSE_CODE, &mut status_code);
         }
 
         // Get effective URL
@@ -473,9 +459,7 @@ impl Curl {
         // SAFETY: handle is valid — duphandle copies all options
         let dup_handle = unsafe { ffi::curl_easy_duphandle(self.handle) };
 
-        AsyncTask::new(CurlPerformTask {
-            handle: dup_handle,
-        })
+        AsyncTask::new(CurlPerformTask { handle: dup_handle })
     }
 
     // ─── WebSocket ──────────────────────────────────────────────────────
@@ -487,9 +471,8 @@ impl Curl {
     #[napi]
     pub fn ws_connect(&mut self) -> Result<()> {
         // Set CONNECT_ONLY=2 for WebSocket mode
-        let code = unsafe {
-            ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_CONNECT_ONLY, 2 as c_long)
-        };
+        let code =
+            unsafe { ffi::curl_easy_setopt(self.handle, ffi::CURLOPT_CONNECT_ONLY, 2 as c_long) };
         self.check_code(code)?;
 
         // Perform the upgrade handshake
@@ -836,11 +819,7 @@ impl napi::Task for CurlPerformTask {
         // Get status code
         let mut status_code: c_long = 0;
         unsafe {
-            ffi::curl_easy_getinfo(
-                self.handle,
-                ffi::CURLINFO_RESPONSE_CODE,
-                &mut status_code,
-            );
+            ffi::curl_easy_getinfo(self.handle, ffi::CURLINFO_RESPONSE_CODE, &mut status_code);
         }
 
         // Get effective URL
@@ -1068,7 +1047,10 @@ mod tests {
 
             // Parse body
             let body_str = String::from_utf8_lossy(&body);
-            assert!(body_str.contains("httpbin.org"), "Body should contain httpbin.org");
+            assert!(
+                body_str.contains("httpbin.org"),
+                "Body should contain httpbin.org"
+            );
 
             ffi::curl_easy_cleanup(handle);
         }

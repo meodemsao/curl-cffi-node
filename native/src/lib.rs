@@ -29,7 +29,10 @@ pub fn curl_version() -> String {
         if ptr.is_null() {
             return "unknown".to_string();
         }
-        CStr::from_ptr(ptr).to_str().unwrap_or("invalid utf-8").to_string()
+        CStr::from_ptr(ptr)
+            .to_str()
+            .unwrap_or("invalid utf-8")
+            .to_string()
     }
 }
 
