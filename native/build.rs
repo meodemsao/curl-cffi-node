@@ -409,36 +409,32 @@ fn num_cpus() -> usize {
         .unwrap_or(4)
 }
 
-/// Find a GNU Make 4.0+ binary.
 fn find_make() -> String {
-    // Try gmake first (Homebrew on macOS)
-    for cmd in &["gmake", "/opt/homebrew/bin/gmake", "/usr/local/bin/gmake"] {
+    let cmds = if cfg!(target_os = "windows") {
+        vec!["make", "gmake"]
+    } else {
+        vec!["gmake", "/opt/homebrew/bin/gmake", "/usr/local/bin/gmake", "make"]
+    };
+
+    for cmd in cmds {
         if let Ok(output) = Command::new(cmd).arg("--version").output() {
             if output.status.success() {
                 let version = String::from_utf8_lossy(&output.stdout);
                 if let Some(line) = version.lines().next() {
-                    println!("cargo:warning=Using: {} ({})", cmd, line);
-                }
-                return cmd.to_string();
-            }
-        }
-    }
-
-    // Try system make if version >= 4.0
-    if let Ok(output) = Command::new("make").arg("--version").output() {
-        if output.status.success() {
-            let version = String::from_utf8_lossy(&output.stdout);
-            if let Some(line) = version.lines().next() {
-                if let Some(ver_str) = line.split_whitespace().last() {
-                    if let Some(major) = ver_str.split('.').next() {
-                        if major.parse::<u32>().unwrap_or(0) >= 4 {
-                            return "make".to_string();
+                    // Quick check if it's GNU Make 4.0+
+                    if let Some(ver_str) = line.split_whitespace().last() {
+                        if let Some(major) = ver_str.split('.').next() {
+                            if major.parse::<u32>().unwrap_or(0) >= 4 {
+                                println!("cargo:warning=Using: {} ({})", cmd, line);
+                                return cmd.to_string();
+                            }
                         }
                     }
                 }
             }
         }
     }
+
 
     panic!(
         "GNU Make 4.0+ not found. curl-impersonate requires .ONESHELL.\n\
