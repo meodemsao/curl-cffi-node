@@ -1,9 +1,13 @@
 # curl-cffi-node
 
-> **Node.js HTTP client with browser TLS/JA3/HTTP2 fingerprint impersonation** — powered by [curl-impersonate](https://github.com/lwthiker/curl-impersonate) via [napi-rs](https://napi.rs).
+> **Node.js HTTP client with browser TLS/JA3/HTTP2 fingerprint impersonation** — powered by [curl-impersonate](https://github.com/lexiforest/curl-impersonate) via [napi-rs](https://napi.rs).
 
+[![npm version](https://img.shields.io/npm/v/curl-cffi-node.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/curl-cffi-node)
+[![npm downloads](https://img.shields.io/npm/dm/curl-cffi-node.svg?color=blue&logo=npm)](https://www.npmjs.com/package/curl-cffi-node)
+[![Publish](https://github.com/meodemsao/curl-cffi-node/actions/workflows/publish.yml/badge.svg)](https://github.com/meodemsao/curl-cffi-node/actions/workflows/publish.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg?logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178c6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)](#supported-platforms)
 
 Bypass TLS fingerprinting, JA3 detection, and HTTP/2 fingerprinting used by Cloudflare, Akamai, and other anti-bot systems. `curl-cffi-node` impersonates real browsers at the TLS and HTTP/2 protocol level — not just User-Agent strings.
@@ -106,7 +110,7 @@ Prebuilt native binaries are available for all [supported platforms](#supported-
 If you need to build from source (custom platform or modifications):
 
 ```bash
-git clone https://github.com/user/curl-cffi-node.git
+git clone --recursive https://github.com/meodemsao/curl-cffi-node.git
 cd curl-cffi-node
 npm install
 npm run build
@@ -623,7 +627,7 @@ Binaries are automatically selected at install time via `optionalDependencies`.
 
 ```bash
 # Clone with submodules (includes curl-impersonate)
-git clone --recursive https://github.com/user/curl-cffi-node.git
+git clone --recursive https://github.com/meodemsao/curl-cffi-node.git
 cd curl-cffi-node
 
 # Install Node.js dependencies
