@@ -141,7 +141,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          export PATH="/mingw64/bin:$PATH"
+          # Create Node.js import library for GNU linker
+          NODE_DIR=$(dirname "$(which node)")
+          echo "Node.js dir: $NODE_DIR"
+          gendef "$NODE_DIR/node.exe"
+          dlltool -d node.def -l "$NODE_DIR/libnode.a" -D node.exe
+          echo "Created libnode.a"
+          # Build with MinGW toolchain
           npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-gnu --output-dir .
 
       - name: Upload artifact
