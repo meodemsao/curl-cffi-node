@@ -56,7 +56,9 @@ jobs:
 
           - host: macos-14
             target: x86_64-apple-darwin
-            setup: brew install cmake ninja golang autoconf automake libtool pkg-config make
+            setup: |
+              brew install cmake ninja golang autoconf automake libtool pkg-config make
+              rustup target add x86_64-apple-darwin
             build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-apple-darwin --output-dir .
 
           - host: macos-14
