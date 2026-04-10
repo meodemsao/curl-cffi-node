@@ -1,0 +1,172 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  # ─── Build All Platforms ───────────────────────────────────────────────────
+  build:
+    name: Build - ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: true
+      matrix:
+        settings:
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-gnu --output-dir .
+
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config musl-tools
+              rustup target add x86_64-unknown-linux-musl
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-musl --output-dir .
+
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config \
+                gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+              rustup target add aarch64-unknown-linux-gnu
+            build: |
+              export CC=aarch64-linux-gnu-gcc
+              export CXX=aarch64-linux-gnu-g++
+              export AR=aarch64-linux-gnu-ar
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+              npx napi build --package curl-cffi-node-native --platform --release --target aarch64-unknown-linux-gnu --output-dir .
+
+          - host: macos-13
+            target: x86_64-apple-darwin
+            setup: brew install cmake ninja golang autoconf automake libtool pkg-config make
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-apple-darwin --output-dir .
+
+          - host: macos-14
+            target: aarch64-apple-darwin
+            setup: brew install cmake ninja golang autoconf automake libtool pkg-config make
+            build: npx napi build --package curl-cffi-node-native --platform --release --target aarch64-apple-darwin --output-dir .
+
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            setup: choco install cmake ninja golang -y
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-msvc --output-dir .
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.settings.target }}-release-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache curl-impersonate build
+        uses: actions/cache@v4
+        with:
+          path: target/curl-impersonate-build
+          key: curl-imp-${{ matrix.settings.target }}-${{ hashFiles('curl-impersonate/**', 'native/build.rs') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup build tools
+        run: ${{ matrix.settings.setup }}
+        shell: bash
+
+      - name: Build native module
+        run: ${{ matrix.settings.build }}
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: '*.node'
+          if-no-files-found: error
+
+  # ─── Publish to npm ────────────────────────────────────────────────────────
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.json
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Move binaries to npm packages
+        run: npx napi artifacts --package-json-path package.json --output-dir artifacts
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for dir in npm/*/; do
+            if [ -f "$dir/package.json" ]; then
+              echo "Publishing $dir..."
+              cd "$dir"
+              npm publish --provenance --access public || true
+              cd ../..
+            fi
+          done
+
+      - name: Publish main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/**/*.node

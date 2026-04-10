@@ -1,0 +1,10 @@
+{
+  "name": "@curl-cffi-node/linux-arm64-gnu",
+  "version": "0.1.0",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "libc": ["glibc"],
+  "main": "curl-cffi-node.linux-arm64-gnu.node",
+  "files": ["curl-cffi-node.linux-arm64-gnu.node"],
+  "description": "curl-cffi-node native binding for Linux ARM64 (glibc)"
+}

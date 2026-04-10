@@ -1,0 +1,9 @@
+{
+  "name": "@curl-cffi-node/darwin-x64",
+  "version": "0.1.0",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "main": "curl-cffi-node.darwin-x64.node",
+  "files": ["curl-cffi-node.darwin-x64.node"],
+  "description": "curl-cffi-node native binding for macOS x64 (Intel)"
+}

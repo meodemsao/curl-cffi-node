@@ -1,0 +1,81 @@
+{
+  "name": "curl-cffi-node",
+  "version": "0.1.0",
+  "description": "Node.js binding for curl-impersonate via napi-rs. HTTP client with browser TLS/JA3/HTTP2 fingerprint impersonation.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "napi": {
+    "binaryName": "curl-cffi-node",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "files": [
+    "dist/**",
+    "npm/**",
+    "*.node"
+  ],
+  "scripts": {
+    "build": "napi build --package curl-cffi-node-native --platform --release --output-dir . && npm run build:ts",
+    "build:debug": "napi build --package curl-cffi-node-native --platform --output-dir . && npm run build:ts",
+    "build:ts": "tsc -p tsconfig.json && npm run build:esm",
+    "build:esm": "cp lib/index.mjs dist/index.mjs",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "vitest run",
+    "test:unit": "vitest run __tests__/unit",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:fast": "vitest run && vitest run --config vitest.integration.config.ts",
+    "test:watch": "vitest",
+    "test:rust": "cargo test --manifest-path native/Cargo.toml",
+    "test:all": "npm run test:rust && npm test"
+  },
+  "keywords": [
+    "curl",
+    "http",
+    "tls",
+    "ja3",
+    "fingerprint",
+    "impersonate",
+    "browser",
+    "scraping",
+    "napi",
+    "native"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.4"
+  },
+  "optionalDependencies": {
+    "@curl-cffi-node/darwin-arm64": "0.1.0",
+    "@curl-cffi-node/darwin-x64": "0.1.0",
+    "@curl-cffi-node/linux-arm64-gnu": "0.1.0",
+    "@curl-cffi-node/linux-x64-gnu": "0.1.0",
+    "@curl-cffi-node/linux-x64-musl": "0.1.0",
+    "@curl-cffi-node/win32-x64-msvc": "0.1.0"
+  }
+}

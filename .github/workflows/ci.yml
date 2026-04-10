@@ -1,0 +1,297 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─── Lint & Test ────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-lint-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rust format check
+        run: cargo fmt --manifest-path native/Cargo.toml -- --check
+
+      - name: Rust clippy
+        run: cargo clippy --manifest-path native/Cargo.toml -- -D warnings
+
+      - name: TypeScript compile check
+        run: npx tsc --noEmit
+
+  # ─── Build Matrix ──────────────────────────────────────────────────────────
+  build:
+    name: Build - ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          # ── Linux x64 GNU ──
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-gnu --output-dir .
+
+          # ── Linux x64 musl ──
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config musl-tools
+              rustup target add x86_64-unknown-linux-musl
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-musl --output-dir .
+
+          # ── Linux ARM64 GNU ──
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            setup: |
+              sudo apt-get update
+              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config \
+                gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+              rustup target add aarch64-unknown-linux-gnu
+            build: |
+              export CC=aarch64-linux-gnu-gcc
+              export CXX=aarch64-linux-gnu-g++
+              export AR=aarch64-linux-gnu-ar
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+              npx napi build --package curl-cffi-node-native --platform --release --target aarch64-unknown-linux-gnu --output-dir .
+
+          # ── macOS x64 ──
+          - host: macos-13
+            target: x86_64-apple-darwin
+            setup: |
+              brew install cmake ninja golang autoconf automake libtool pkg-config make
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-apple-darwin --output-dir .
+
+          # ── macOS ARM64 (Apple Silicon) ──
+          - host: macos-14
+            target: aarch64-apple-darwin
+            setup: |
+              brew install cmake ninja golang autoconf automake libtool pkg-config make
+            build: npx napi build --package curl-cffi-node-native --platform --release --target aarch64-apple-darwin --output-dir .
+
+          # ── Windows x64 MSVC ──
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            setup: |
+              choco install cmake ninja golang -y
+            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-msvc --output-dir .
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.settings.target }}-cargo-
+
+      - name: Cache curl-impersonate build
+        uses: actions/cache@v4
+        with:
+          path: target/curl-impersonate-build
+          key: curl-imp-${{ matrix.settings.target }}-${{ hashFiles('curl-impersonate/**', 'native/build.rs') }}
+          restore-keys: |
+            curl-imp-${{ matrix.settings.target }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup build tools
+        run: ${{ matrix.settings.setup }}
+        shell: bash
+
+      - name: Build native module
+        run: ${{ matrix.settings.build }}
+        shell: bash
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.json
+
+      - name: Verify binary size
+        shell: bash
+        run: |
+          NODE_FILE=$(ls *.node 2>/dev/null | head -1)
+          if [ -n "$NODE_FILE" ]; then
+            SIZE=$(wc -c < "$NODE_FILE" | tr -d ' ')
+            SIZE_MB=$((SIZE / 1024 / 1024))
+            echo "Binary: $NODE_FILE  Size: ${SIZE_MB}MB ($SIZE bytes)"
+            if [ $SIZE -gt 26214400 ]; then
+              echo "::error::Binary size ${SIZE_MB}MB exceeds 25MB limit"
+              exit 1
+            fi
+          fi
+
+      - name: Verify no dynamic curl/ssl deps (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          NODE_FILE=$(ls *.node 2>/dev/null | head -1)
+          if [ -n "$NODE_FILE" ]; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              DEPS=$(otool -L "$NODE_FILE" || true)
+            else
+              DEPS=$(ldd "$NODE_FILE" 2>/dev/null || readelf -d "$NODE_FILE" 2>/dev/null || true)
+            fi
+            echo "$DEPS"
+            if echo "$DEPS" | grep -qi "libcurl\|libssl\|libcrypto"; then
+              echo "::error::Dynamic dependency on libcurl/libssl found!"
+              exit 1
+            fi
+            echo "✅ No dynamic curl/ssl dependencies"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: '*.node'
+          if-no-files-found: error
+
+  # ─── Test Binaries ─────────────────────────────────────────────────────────
+  test:
+    name: Test - ${{ matrix.settings.target }}
+    needs: build
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - host: macos-14
+            target: aarch64-apple-darwin
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: .
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.json
+
+      - name: Run tests
+        run: npx vitest run
+
+      - name: Verify curl version from Node.js
+        shell: bash
+        run: |
+          node -e "
+            const m = require('./dist/index.js');
+            const v = m.curlVersion();
+            console.log('curl version:', v);
+            if (!v.includes('IMPERSONATE')) {
+              process.exit(1);
+            }
+            console.log('✅ curl-impersonate verified');
+          "
+
+  # ─── Package Size Check ────────────────────────────────────────────────────
+  package-size:
+    name: Package Size Check
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.json
+
+      - name: Check main package size
+        run: |
+          npm pack --dry-run 2>&1
+          TARBALL=$(npm pack 2>&1 | tail -1)
+          SIZE=$(wc -c < "$TARBALL" | tr -d ' ')
+          SIZE_KB=$((SIZE / 1024))
+          echo "Main package: ${SIZE_KB}KB ($SIZE bytes)"
+          if [ $SIZE -gt 102400 ]; then
+            echo "::error::Main package size ${SIZE_KB}KB exceeds 100KB limit"
+            exit 1
+          fi
+          echo "✅ Main package within 100KB limit"
+          rm -f "$TARBALL"

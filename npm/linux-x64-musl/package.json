@@ -1,0 +1,10 @@
+{
+  "name": "@curl-cffi-node/linux-x64-musl",
+  "version": "0.1.0",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "libc": ["musl"],
+  "main": "curl-cffi-node.linux-x64-musl.node",
+  "files": ["curl-cffi-node.linux-x64-musl.node"],
+  "description": "curl-cffi-node native binding for Linux x64 (musl)"
+}
