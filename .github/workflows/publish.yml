@@ -33,14 +33,6 @@ jobs:
             build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-gnu --output-dir .
 
           - host: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config musl-tools
-              rustup target add x86_64-unknown-linux-musl
-            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-musl --output-dir .
-
-          - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             setup: |
               sudo apt-get update

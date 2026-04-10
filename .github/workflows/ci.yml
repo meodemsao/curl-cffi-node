@@ -74,14 +74,6 @@ jobs:
               sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config
             build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-gnu --output-dir .
 
-          # ── Linux x64 musl ──
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            setup: |
-              sudo apt-get update
-              sudo apt-get install -y cmake ninja-build golang-go autoconf automake libtool pkg-config musl-tools
-              rustup target add x86_64-unknown-linux-musl
-            build: npx napi build --package curl-cffi-node-native --platform --release --target x86_64-unknown-linux-musl --output-dir .
 
           # ── Linux ARM64 GNU ──
           - host: ubuntu-latest
