@@ -84,7 +84,7 @@ fn main() {
 
         let mut configure_args = vec![format!(
             "--prefix={}",
-            build_dir.join("installed").display()
+            build_dir.join("installed").display().to_string().replace('\\', "/")
         )];
 
         // Add --host for cross-compilation
