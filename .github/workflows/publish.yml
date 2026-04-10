@@ -68,12 +68,8 @@ jobs:
 
           - host: windows-latest
             target: x86_64-pc-windows-gnu
-            setup: |
-              C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-go autoconf automake libtool make pkg-config"
-              rustup target add x86_64-pc-windows-gnu
-            build: |
-              $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
-              npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-gnu --output-dir .
+            setup: echo "Setup handled by MSYS2 action"
+            build: echo "Build handled by dedicated step"
 
     steps:
       - uses: actions/checkout@v4
@@ -109,13 +105,43 @@ jobs:
         run: |
           npm ci || (npm cache clean --force && npm install)
 
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-go
+            autoconf
+            automake
+            libtool
+            make
+            pkg-config
+
+      - name: Setup Rust target (Windows)
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-gnu
+
       - name: Setup build tools
+        if: runner.os != 'Windows'
         run: ${{ matrix.settings.setup }}
         shell: bash
 
       - name: Build native module
+        if: runner.os != 'Windows'
         run: ${{ matrix.settings.build }}
         shell: bash
+
+      - name: Build native module (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          export PATH="/mingw64/bin:$PATH"
+          npx napi build --package curl-cffi-node-native --platform --release --target x86_64-pc-windows-gnu --output-dir .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
