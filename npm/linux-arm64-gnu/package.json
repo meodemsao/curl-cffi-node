@@ -6,5 +6,9 @@
   "libc": ["glibc"],
   "main": "curl-cffi-node.linux-arm64-gnu.node",
   "files": ["curl-cffi-node.linux-arm64-gnu.node"],
-  "description": "curl-cffi-node native binding for Linux ARM64 (glibc)"
+  "description": "curl-cffi-node native binding for Linux ARM64 (glibc)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meodemsao/curl-cffi-node.git"
+  }
 }

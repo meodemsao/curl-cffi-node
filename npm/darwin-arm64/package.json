@@ -5,5 +5,9 @@
   "cpu": ["arm64"],
   "main": "curl-cffi-node.darwin-arm64.node",
   "files": ["curl-cffi-node.darwin-arm64.node"],
-  "description": "curl-cffi-node native binding for macOS ARM64 (Apple Silicon)"
+  "description": "curl-cffi-node native binding for macOS ARM64 (Apple Silicon)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meodemsao/curl-cffi-node.git"
+  }
 }

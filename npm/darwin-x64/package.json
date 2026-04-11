@@ -5,5 +5,9 @@
   "cpu": ["x64"],
   "main": "curl-cffi-node.darwin-x64.node",
   "files": ["curl-cffi-node.darwin-x64.node"],
-  "description": "curl-cffi-node native binding for macOS x64 (Intel)"
+  "description": "curl-cffi-node native binding for macOS x64 (Intel)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meodemsao/curl-cffi-node.git"
+  }
 }

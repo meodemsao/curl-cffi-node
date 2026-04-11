@@ -5,5 +5,9 @@
   "cpu": ["x64"],
   "main": "curl-cffi-node.win32-x64-msvc.node",
   "files": ["curl-cffi-node.win32-x64-msvc.node"],
-  "description": "curl-cffi-node native binding for Windows x64 (MSVC)"
+  "description": "curl-cffi-node native binding for Windows x64 (MSVC)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meodemsao/curl-cffi-node.git"
+  }
 }
