@@ -145,8 +145,20 @@ export declare const enum BrowserType {
   Chrome110 = 'chrome110',
   /** Chrome 116 (Windows 10) */
   Chrome116 = 'chrome116',
+  /** Chrome 119 (macOS) */
+  Chrome119 = 'chrome119',
+  /** Chrome 120 (macOS) */
+  Chrome120 = 'chrome120',
+  /** Chrome 123 (macOS) */
+  Chrome123 = 'chrome123',
+  /** Chrome 124 (macOS) */
+  Chrome124 = 'chrome124',
+  /** Chrome 131 (macOS) — includes post-quantum X25519MLKEM768 */
+  Chrome131 = 'chrome131',
   /** Chrome 99 (Android 12, Pixel 6) */
   Chrome99Android = 'chrome99_android',
+  /** Chrome 131 (Android) */
+  Chrome131Android = 'chrome131_android',
   /** Edge 99 (Windows 10) */
   Edge99 = 'edge99',
   /** Edge 101 (Windows 10) */
@@ -154,7 +166,17 @@ export declare const enum BrowserType {
   /** Safari 15.3 (macOS) */
   Safari15_3 = 'safari15_3',
   /** Safari 15.5 (macOS) */
-  Safari15_5 = 'safari15_5'
+  Safari15_5 = 'safari15_5',
+  /** Safari 17.0 (macOS) */
+  Safari17_0 = 'safari17_0',
+  /** Safari 18.0 (macOS) */
+  Safari18_0 = 'safari18_0',
+  /** Safari 17.2 (iOS) */
+  Safari17_2Ios = 'safari17_2_ios',
+  /** Safari 18.0 (iOS) */
+  Safari18_0Ios = 'safari18_0_ios',
+  /** Firefox 133 */
+  Firefox133 = 'firefox133'
 }
 
 /**
@@ -264,7 +286,29 @@ export declare const enum CurlOpt {
   /** Set proxy-specific headers. */
   ProxyHeader = 37,
   /** Set custom DNS resolve mappings. */
-  Resolve = 38
+  Resolve = 38,
+  /** Enable GREASE (Generate Random Extensions And Sustain Extensibility) in TLS (0 or 1). */
+  TlsGrease = 39,
+  /** Set TLS extension order (e.g., custom extension ordering string). */
+  TlsExtensionOrder = 40,
+  /** Enable HTTP/2 exclusive stream flag (0 or 1). */
+  StreamExclusive = 41,
+  /** Skip TLS key usage check (0 or 1). */
+  TlsKeyUsageNoCheck = 42,
+  /** Enable Signed Certificate Timestamps TLS extension (0 or 1). */
+  TlsSignedCertTimestamps = 43,
+  /** Enable OCSP status request TLS extension (0 or 1). */
+  TlsStatusRequest = 44,
+  /** Set delegated credentials configuration. */
+  TlsDelegatedCredentials = 45,
+  /** Set TLS record size limit. */
+  TlsRecordSizeLimit = 46,
+  /** Set TLS key shares limit. */
+  TlsKeySharesLimit = 47,
+  /** Use new ALPS codepoint (0 or 1). */
+  TlsUseNewAlpsCodepoint = 48,
+  /** Disable HTTP/2 priority frames (0 or 1). */
+  Http2NoPriority = 49
 }
 
 /** Returns the libcurl version string from the linked curl-impersonate library. */

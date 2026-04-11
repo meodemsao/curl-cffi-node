@@ -58,6 +58,30 @@ export enum CurlOpt {
   HttpHeader = 36,
   ProxyHeader = 37,
   Resolve = 38,
+
+  // Advanced TLS fingerprint options (curl-impersonate)
+  /** Enable GREASE in TLS handshake (0 or 1). */
+  TlsGrease = 39,
+  /** Set TLS extension order string. */
+  TlsExtensionOrder = 40,
+  /** Enable HTTP/2 exclusive stream flag (0 or 1). */
+  StreamExclusive = 41,
+  /** Skip TLS key usage check (0 or 1). */
+  TlsKeyUsageNoCheck = 42,
+  /** Enable Signed Certificate Timestamps extension (0 or 1). */
+  TlsSignedCertTimestamps = 43,
+  /** Enable OCSP status request extension (0 or 1). */
+  TlsStatusRequest = 44,
+  /** Set delegated credentials configuration string. */
+  TlsDelegatedCredentials = 45,
+  /** Set TLS record size limit. */
+  TlsRecordSizeLimit = 46,
+  /** Set TLS key shares limit. */
+  TlsKeySharesLimit = 47,
+  /** Use new ALPS codepoint (0 or 1). */
+  TlsUseNewAlpsCodepoint = 48,
+  /** Disable HTTP/2 priority frames (0 or 1). */
+  Http2NoPriority = 49,
 }
 
 // ─── CurlInfo ────────────────────────────────────────────────────────────────
@@ -89,6 +113,7 @@ export enum CurlInfo {
  * curl_easy_impersonate().
  */
 export enum BrowserType {
+  // Chrome Desktop
   Chrome99 = 'chrome99',
   Chrome100 = 'chrome100',
   Chrome101 = 'chrome101',
@@ -96,9 +121,30 @@ export enum BrowserType {
   Chrome107 = 'chrome107',
   Chrome110 = 'chrome110',
   Chrome116 = 'chrome116',
+  Chrome119 = 'chrome119',
+  Chrome120 = 'chrome120',
+  Chrome123 = 'chrome123',
+  Chrome124 = 'chrome124',
+  Chrome131 = 'chrome131',
+
+  // Chrome Android
   Chrome99Android = 'chrome99_android',
+  Chrome131Android = 'chrome131_android',
+
+  // Edge
   Edge99 = 'edge99',
   Edge101 = 'edge101',
+
+  // Safari Desktop
   Safari15_3 = 'safari15_3',
   Safari15_5 = 'safari15_5',
+  Safari17_0 = 'safari17_0',
+  Safari18_0 = 'safari18_0',
+
+  // Safari iOS
+  Safari17_2_iOS = 'safari17_2_ios',
+  Safari18_0_iOS = 'safari18_0_ios',
+
+  // Firefox
+  Firefox133 = 'firefox133',
 }

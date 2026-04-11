@@ -98,6 +98,30 @@ pub enum CurlOpt {
     ProxyHeader,
     /// Set custom DNS resolve mappings.
     Resolve,
+
+    // ── Advanced TLS fingerprint options (curl-impersonate) ───────────
+    /// Enable GREASE (Generate Random Extensions And Sustain Extensibility) in TLS (0 or 1).
+    TlsGrease,
+    /// Set TLS extension order (e.g., custom extension ordering string).
+    TlsExtensionOrder,
+    /// Enable HTTP/2 exclusive stream flag (0 or 1).
+    StreamExclusive,
+    /// Skip TLS key usage check (0 or 1).
+    TlsKeyUsageNoCheck,
+    /// Enable Signed Certificate Timestamps TLS extension (0 or 1).
+    TlsSignedCertTimestamps,
+    /// Enable OCSP status request TLS extension (0 or 1).
+    TlsStatusRequest,
+    /// Set delegated credentials configuration.
+    TlsDelegatedCredentials,
+    /// Set TLS record size limit.
+    TlsRecordSizeLimit,
+    /// Set TLS key shares limit.
+    TlsKeySharesLimit,
+    /// Use new ALPS codepoint (0 or 1).
+    TlsUseNewAlpsCodepoint,
+    /// Disable HTTP/2 priority frames (0 or 1).
+    Http2NoPriority,
 }
 
 impl CurlOpt {
@@ -143,6 +167,17 @@ impl CurlOpt {
             CurlOpt::HttpHeader => ffi::CURLOPT_HTTPHEADER,
             CurlOpt::ProxyHeader => ffi::CURLOPT_PROXYHEADER,
             CurlOpt::Resolve => ffi::CURLOPT_RESOLVE,
+            CurlOpt::TlsGrease => ffi::CURLOPT_TLS_GREASE,
+            CurlOpt::TlsExtensionOrder => ffi::CURLOPT_TLS_EXTENSION_ORDER,
+            CurlOpt::StreamExclusive => ffi::CURLOPT_STREAM_EXCLUSIVE,
+            CurlOpt::TlsKeyUsageNoCheck => ffi::CURLOPT_TLS_KEY_USAGE_NO_CHECK,
+            CurlOpt::TlsSignedCertTimestamps => ffi::CURLOPT_TLS_SIGNED_CERT_TIMESTAMPS,
+            CurlOpt::TlsStatusRequest => ffi::CURLOPT_TLS_STATUS_REQUEST,
+            CurlOpt::TlsDelegatedCredentials => ffi::CURLOPT_TLS_DELEGATED_CREDENTIALS,
+            CurlOpt::TlsRecordSizeLimit => ffi::CURLOPT_TLS_RECORD_SIZE_LIMIT,
+            CurlOpt::TlsKeySharesLimit => ffi::CURLOPT_TLS_KEY_SHARES_LIMIT,
+            CurlOpt::TlsUseNewAlpsCodepoint => ffi::CURLOPT_TLS_USE_NEW_ALPS_CODEPOINT,
+            CurlOpt::Http2NoPriority => ffi::CURLOPT_HTTP2_NO_PRIORITY,
         }
     }
 
@@ -167,7 +202,9 @@ impl CurlOpt {
             | CurlOpt::SslCertCompression
             | CurlOpt::Http2PseudoHeadersOrder
             | CurlOpt::Http2Settings
-            | CurlOpt::Http2Streams => OptType::String,
+            | CurlOpt::Http2Streams
+            | CurlOpt::TlsExtensionOrder
+            | CurlOpt::TlsDelegatedCredentials => OptType::String,
 
             CurlOpt::FollowLocation
             | CurlOpt::MaxRedirs
@@ -185,7 +222,16 @@ impl CurlOpt {
             | CurlOpt::SslPermuteExtensions
             | CurlOpt::HttpVersion
             | CurlOpt::Http2WindowUpdate
-            | CurlOpt::StreamWeight => OptType::Long,
+            | CurlOpt::StreamWeight
+            | CurlOpt::TlsGrease
+            | CurlOpt::StreamExclusive
+            | CurlOpt::TlsKeyUsageNoCheck
+            | CurlOpt::TlsSignedCertTimestamps
+            | CurlOpt::TlsStatusRequest
+            | CurlOpt::TlsRecordSizeLimit
+            | CurlOpt::TlsKeySharesLimit
+            | CurlOpt::TlsUseNewAlpsCodepoint
+            | CurlOpt::Http2NoPriority => OptType::Long,
 
             CurlOpt::HttpHeader | CurlOpt::ProxyHeader | CurlOpt::Resolve => OptType::SList,
         }

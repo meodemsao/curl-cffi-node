@@ -18,7 +18,7 @@ async function main() {
 
     console.log(`\n── ${target} ──`);
     const r = await session.get('https://tls.peet.ws/api/all');
-    const tls = r.json();
+    const tls = r.json() as any;
 
     console.log('  JA3 hash:    ', tls.tls?.ja3_hash ?? 'N/A');
     console.log('  JA4:         ', tls.tls?.ja4 ?? 'N/A');
