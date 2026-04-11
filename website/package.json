@@ -1,0 +1,28 @@
+{
+  "name": "users-admin-desktop-projects-curl-cffi-node-website",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "generate-types": "wrangler types"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.1.8",
+    "@astrojs/svelte": "^8.0.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "astro": "^6.1.5",
+    "svelte": "^5.55.3",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.81.1"
+  },
+  "overrides": {
+    "vite": "^7"
+  }
+}

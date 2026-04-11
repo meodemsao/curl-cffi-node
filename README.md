@@ -18,6 +18,7 @@ Bypass TLS fingerprinting, JA3 detection, and HTTP/2 fingerprinting used by Clou
 
 - [Features](#features)
 - [Why curl-cffi-node?](#why-curl-cffi-node)
+- [🌐 Live Demo & Fingerprint Tool](#-live-demo--fingerprint-tool)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -76,6 +77,43 @@ Traditional HTTP clients (`node-fetch`, `axios`, `undici`) create **identifiable
 | **HTTP/2 Fingerprint** | SETTINGS, WINDOW_UPDATE, PRIORITY frames | ❌ Generic | ✅ Matches target browser |
 | **Header Order** | Order of HTTP headers in request | ❌ Alphabetical | ✅ Matches browser order |
 | **TLS Extensions** | ALPN, SNI, supported groups | ❌ Node.js/OpenSSL | ✅ Browser-identical |
+
+---
+
+## 🌐 Live Demo & Fingerprint Tool
+
+**Try it now** → [**curl-cffi-node.pages.dev**](https://curl-cffi-node.pages.dev)
+
+We built an interactive website where you can:
+
+### 🔍 Fingerprint Inspector
+
+See your browser's **exact TLS and HTTP/2 fingerprint** in real time:
+
+- **JA3 / JA4 Hash** — The TLS ClientHello fingerprint that anti-bot systems use to identify you
+- **Akamai H2 Fingerprint** — HTTP/2 SETTINGS + WINDOW_UPDATE + PRIORITY frame fingerprint
+- **HTTP/2 Settings** — ENABLE_PUSH, MAX_CONCURRENT_STREAMS, INITIAL_WINDOW_SIZE, etc.
+- **TLS Extensions & Cipher Suites** — Full list of what your browser negotiates
+- **Ready-to-use code** — Auto-generated `curl-cffi-node` code snippet with your exact fingerprint values
+
+### 🤝 Community Fingerprint Database
+
+Contribute your browser's fingerprint to help build the **largest open-source fingerprint database**:
+
+- **Auto-detection** — Browser name, version, OS, and device type are parsed from your User-Agent
+- **One-click submit** — Captured fingerprint is auto-attached; just click "Contribute"
+- **Powered by Cloudflare D1** — All submissions stored in a SQLite edge database
+- **Public API** — Query fingerprints via `GET /api/fingerprints`
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/capture` | `GET` | Capture TLS/HTTP2 fingerprint (proxy to avoid CORS) |
+| `/api/fingerprints` | `GET` | List contributed fingerprints (`?limit=50&offset=0`) |
+| `/api/fingerprints` | `POST` | Submit a new fingerprint with metadata |
+
+**Tech stack**: Astro + Svelte + TailwindCSS, deployed on Cloudflare Pages with D1 (SQLite) database.
 
 ---
 

@@ -1,0 +1,104 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CapturePanel from '../components/fingerprint/CapturePanel.svelte';
+import ContributeForm from '../components/fingerprint/ContributeForm.svelte';
+
+const knownFingerprints = [
+  { browser: 'Chrome 131', ja4: 't13d1516h2_8daaf6152771_02713d6af862', akamai: '1:65536;2:0;4:6291456;6:262144|15663105|0|m,a,s,p', family: 'chrome', device: 'Desktop' },
+  { browser: 'Safari 18.0', ja4: 't13d2014h2_a09f3c656075_7f0f34a4126d', akamai: '2:0;3:100;4:2097152;:1;9:1|10420225|0|m,s,a,p', family: 'safari', device: 'Desktop' },
+  { browser: 'Safari 18.0 iOS', ja4: 't13d2014h2_a09f3c656075_7f0f34a4126d', akamai: '2:0;3:100;4:2097152;:1;9:1|10420225|0|m,s,a,p', family: 'safari', device: 'iOS' },
+  { browser: 'Firefox 133', ja4: 't13d1716h2_5b57614c22b0_eeeea6562960', akamai: '1:65536;2:0;4:131072;5:16384|12517377|0|m,p,a,s', family: 'firefox', device: 'Desktop' },
+  { browser: 'Chrome 116', ja4: 't13d1516h2_8daaf6152771_f37e75b10bcc', akamai: '1:65536;2:0;3:1000;4:6291456;6:262144|15663105|0|m,a,s,p', family: 'chrome', device: 'Desktop' },
+  { browser: 'Safari 17.0', ja4: 't13d2014h2_a09f3c656075_874d27d7ca63', akamai: '2:0;4:4194304;3:100|10485760|0|m,s,p,a', family: 'safari', device: 'Desktop' },
+];
+---
+
+<Layout title="Fingerprint Tool — curl-cffi-node" description="Capture and compare browser TLS fingerprints. Contribute to the community fingerprint database.">
+  <section class="relative overflow-hidden">
+    <div class="absolute top-20 -right-40 w-96 h-96 bg-[var(--color-accent-cyan)]/8 rounded-full blur-[120px]"></div>
+    <div class="absolute top-60 -left-40 w-96 h-96 bg-[var(--color-accent-purple)]/8 rounded-full blur-[120px]"></div>
+
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-8">
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-secondary)] mb-6">
+          <span class="text-base">🔍</span>
+          TLS Fingerprint Inspector
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
+          What's your <span class="gradient-text">fingerprint</span>?
+        </h1>
+        <p class="text-[var(--color-text-secondary)] max-w-xl mx-auto leading-relaxed">
+          See exactly how websites identify your browser through TLS and HTTP/2 fingerprinting. 
+          Contribute yours to help build a community database.
+        </p>
+      </div>
+
+      <!-- Capture Panel (Svelte island) -->
+      <CapturePanel client:load />
+
+      <!-- Contribute Form-->
+      <div class="mt-8">
+        <ContributeForm client:visible />
+      </div>
+
+      <!-- Known Fingerprints Gallery -->
+      <div class="mt-16">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold mb-2">Community Fingerprints</h2>
+          <p class="text-sm text-[var(--color-text-secondary)]">Known browser fingerprints captured by curl-cffi-node</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {knownFingerprints.map((fp) => (
+            <div class="group p-4 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-[var(--color-border-highlight)] transition-all duration-300">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span class={`w-2.5 h-2.5 rounded-full ${fp.family === 'chrome' ? 'bg-[var(--color-accent-blue)]' : fp.family === 'safari' ? 'bg-[var(--color-accent-cyan)]' : fp.family === 'firefox' ? 'bg-[var(--color-accent-orange)]' : 'bg-[var(--color-accent-purple)]'}`}></span>
+                  <span class="font-medium text-[var(--color-text-primary)]">{fp.browser}</span>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
+                  {fp.device}
+                </span>
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] w-12 shrink-0">JA4</span>
+                  <code class="text-[11px] text-[var(--color-accent-cyan)] font-mono truncate">{fp.ja4}</code>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] w-12 shrink-0">H2</span>
+                  <code class="text-[10px] text-[var(--color-text-secondary)] font-mono truncate">{fp.akamai}</code>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="mt-16">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold mb-2">How TLS Fingerprinting Works</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="p-5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)]">
+            <div class="w-10 h-10 rounded-lg bg-[var(--color-accent-blue)]/15 flex items-center justify-center text-[var(--color-accent-blue)] font-bold mb-3">1</div>
+            <h3 class="font-semibold mb-1.5 text-[var(--color-text-primary)]">TLS ClientHello</h3>
+            <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">When your browser connects, it sends a TLS ClientHello with specific ciphers, extensions, and curves. This creates a unique JA3/JA4 hash.</p>
+          </div>
+          <div class="p-5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)]">
+            <div class="w-10 h-10 rounded-lg bg-[var(--color-accent-cyan)]/15 flex items-center justify-center text-[var(--color-accent-cyan)] font-bold mb-3">2</div>
+            <h3 class="font-semibold mb-1.5 text-[var(--color-text-primary)]">HTTP/2 SETTINGS</h3>
+            <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Each browser sends different HTTP/2 SETTINGS values (window size, max streams, etc.). This creates the Akamai H2 fingerprint.</p>
+          </div>
+          <div class="p-5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)]">
+            <div class="w-10 h-10 rounded-lg bg-[var(--color-accent-purple)]/15 flex items-center justify-center text-[var(--color-accent-purple)] font-bold mb-3">3</div>
+            <h3 class="font-semibold mb-1.5 text-[var(--color-text-primary)]">Bot Detection</h3>
+            <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">Services like Cloudflare and Akamai compare these fingerprints against known browser profiles. Mismatches → blocked as bot.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

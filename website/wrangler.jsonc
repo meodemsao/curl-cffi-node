@@ -1,0 +1,13 @@
+{
+	"name": "curl-cffi-node",
+	"compatibility_date": "2026-04-11",
+	"compatibility_flags": ["nodejs_compat"],
+	"pages_build_output_dir": "./dist",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "fingerprint-db",
+			"database_id": "21605ef0-4922-47bb-bb82-47679d774b54"
+		}
+	]
+}
