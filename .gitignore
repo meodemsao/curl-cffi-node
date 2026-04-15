@@ -27,6 +27,8 @@ npm-debug.log*
 # napi-rs generated files
 native/index.js
 native/index.d.ts
+/index.js
+/index.d.ts
 
 # BMad workflow outputs
 _bmad-output/

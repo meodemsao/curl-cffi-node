@@ -32,56 +32,35 @@ export {
   WS_BINARY,
   WS_CLOSE,
 } from './websocket.js';
+export type {
+  CurlHandle,
+  PerformResult,
+  WsFrame,
+  NativeBinding,
+} from './types.js';
 
 // ─── Native Bindings ─────────────────────────────────────────────────────────
 
 /**
  * Returns a greeting from the native module to verify binding works.
  */
-export const hello: () => string = nativeBinding.hello as () => string;
+export const hello = nativeBinding.hello;
 
 /**
  * Returns the version of the native Rust module.
  */
-export const nativeVersion: () => string = nativeBinding.nativeVersion as () => string;
+export const nativeVersion = nativeBinding.nativeVersion;
 
 /**
  * Returns the version string from the linked libcurl-impersonate library.
  */
-export const curlVersion: () => string = nativeBinding.curlVersion as () => string;
+export const curlVersion = nativeBinding.curlVersion;
 
 // ─── Curl Handle Class (Low-level) ──────────────────────────────────────────
 
 export { CurlOpt, CurlInfo, BrowserType } from './enums.js';
 
-export const Curl = nativeBinding.Curl as {
-  new(): CurlHandle;
-};
-
-export interface CurlHandle {
-  setoptStr(opt: number, value: string): void;
-  setoptLong(opt: number, value: number): void;
-  setoptList(opt: number, values: string[]): void;
-  impersonate(browser: string, defaultHeaders?: boolean): void;
-  impersonateStr(target: string, defaultHeaders?: boolean): void;
-  perform(): PerformResult;
-  performAsync(): Promise<PerformResult>;
-  getinfo(info: number): number | string;
-  reset(): void;
-  duplicate(): CurlHandle;
-  strerror(code: number): string;
-}
-
-export interface PerformResult {
-  body: Buffer;
-  headers: string;
-  statusCode: number;
-  effectiveUrl: string;
-  dnsTimeMs: number;
-  connectTimeMs: number;
-  tlsTimeMs: number;
-  totalTimeMs: number;
-}
+export const Curl = nativeBinding.Curl;
 
 // ─── Shorthand Functions (Story 3.5) ────────────────────────────────────────
 

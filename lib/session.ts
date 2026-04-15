@@ -12,11 +12,10 @@
  */
 
 import { nativeBinding } from './binding.js';
+import { CurlOpt } from './enums.js';
 import { Response } from './response.js';
 import { parseCurlError } from './errors.js';
-
-const NativeCurl = nativeBinding.Curl as { new(): any };
-const NativeCurlOpt = nativeBinding.CurlOpt as any;
+import type { CurlHandle } from './types.js';
 
 /** Options for creating a Session. */
 export interface SessionOptions {
@@ -69,7 +68,7 @@ export class Session {
     proxy?: string;
   };
   /** Persistent handle for connection reuse and cookie persistence. */
-  private _handle: any;
+  private _handle: CurlHandle;
 
   constructor(options: SessionOptions = {}) {
     this._options = {
@@ -82,7 +81,7 @@ export class Session {
     };
 
     // Create the persistent handle
-    this._handle = new NativeCurl();
+    this._handle = new nativeBinding.Curl();
 
     // Enable cookie engine
     this._handle.enableCookies();
@@ -159,7 +158,7 @@ export class Session {
   clearCookies(domain?: string): void {
     if (domain) {
       // Filter by domain: get all, clear all, re-add non-matching
-      const all = this._handle.getCookies() as string[];
+      const all = this._handle.getCookies();
       this._handle.clearCookies();
       for (const line of all) {
         // Netscape format: domain \t ... — first field is domain
@@ -215,17 +214,17 @@ export class Session {
       finalUrl += (url.includes('?') ? '&' : '?') + qs;
     }
 
-    curl.setoptStr(NativeCurlOpt.Url, finalUrl);
+    curl.setoptStr(CurlOpt.Url, finalUrl);
 
     // HTTP method — always set explicitly to prevent method leakage
     // between requests on the persistent handle (P2 fix)
-    curl.setoptStr(NativeCurlOpt.CustomRequest, method);
+    curl.setoptStr(CurlOpt.CustomRequest, method);
     if (method === 'GET' || method === 'HEAD' || method === 'DELETE') {
-      curl.setoptLong(NativeCurlOpt.Post, 0);
+      curl.setoptLong(CurlOpt.Post, 0);
     } else {
       // Re-enable POST mode for POST/PUT/PATCH — required after a
       // previous GET explicitly disabled it (P2 lifecycle fix)
-      curl.setoptLong(NativeCurlOpt.Post, 1);
+      curl.setoptLong(CurlOpt.Post, 1);
     }
 
     // Headers: merge session + request
@@ -241,7 +240,7 @@ export class Session {
       }
     }
     // Always set headers to prevent stale headers from previous requests (P4 fix)
-    curl.setoptList(NativeCurlOpt.HttpHeader, headerList.length > 0 ? headerList : ['_:']);
+    curl.setoptList(CurlOpt.HttpHeader, headerList.length > 0 ? headerList : ['_:']);
 
     // Body
     if (options?.data !== undefined) {
@@ -251,7 +250,7 @@ export class Session {
       } else if (typeof options.data === 'object') {
         body = JSON.stringify(options.data);
         if (!headerList.some((h) => h.toLowerCase().startsWith('content-type'))) {
-          curl.setoptList(NativeCurlOpt.HttpHeader, [
+          curl.setoptList(CurlOpt.HttpHeader, [
             ...headerList,
             'Content-Type: application/json',
           ]);
@@ -263,38 +262,38 @@ export class Session {
       // setting PostFields. This is required because a previous bodyless
       // request may have set PostFieldSize=0, causing curl to ignore the
       // body even when PostFields is set (P3 lifecycle fix).
-      curl.setoptLong(NativeCurlOpt.PostFieldSize, -1);
-      curl.setoptStr(NativeCurlOpt.PostFields, body);
+      curl.setoptLong(CurlOpt.PostFieldSize, -1);
+      curl.setoptStr(CurlOpt.PostFields, body);
     } else {
       // Clear any previous POST body to prevent data leakage (P3 fix)
-      curl.setoptLong(NativeCurlOpt.PostFieldSize, 0);
+      curl.setoptLong(CurlOpt.PostFieldSize, 0);
     }
 
     // Timeout
     const timeout = options?.timeout ?? this._options.timeout;
     if (timeout && timeout > 0) {
-      curl.setoptLong(NativeCurlOpt.TimeoutMs, Math.floor(timeout * 1000));
+      curl.setoptLong(CurlOpt.TimeoutMs, Math.floor(timeout * 1000));
     } else {
-      curl.setoptLong(NativeCurlOpt.TimeoutMs, 0);
+      curl.setoptLong(CurlOpt.TimeoutMs, 0);
     }
 
     // Redirects
     const followRedirects = options?.followRedirects ?? this._options.followRedirects;
-    curl.setoptLong(NativeCurlOpt.FollowLocation, followRedirects ? 1 : 0);
+    curl.setoptLong(CurlOpt.FollowLocation, followRedirects ? 1 : 0);
     const maxRedirects = options?.maxRedirects ?? this._options.maxRedirects;
-    curl.setoptLong(NativeCurlOpt.MaxRedirs, maxRedirects);
+    curl.setoptLong(CurlOpt.MaxRedirs, maxRedirects);
 
     // Proxy
     const proxy = options?.proxy ?? this._options.proxy;
     if (proxy) {
-      curl.setoptStr(NativeCurlOpt.Proxy, proxy);
+      curl.setoptStr(CurlOpt.Proxy, proxy);
     }
 
     // SSL
     const verify = options?.verify ?? this._options.verify;
     if (verify === false) {
-      curl.setoptLong(NativeCurlOpt.SslVerifyPeer, 0);
-      curl.setoptLong(NativeCurlOpt.SslVerifyHost, 0);
+      curl.setoptLong(CurlOpt.SslVerifyPeer, 0);
+      curl.setoptLong(CurlOpt.SslVerifyHost, 0);
     }
 
     // Perform synchronously on the persistent handle (keeps cookies!)

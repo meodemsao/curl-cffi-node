@@ -16,10 +16,9 @@
 
 import { EventEmitter } from 'events';
 import { nativeBinding } from './binding.js';
+import { CurlOpt } from './enums.js';
 import { parseCurlError } from './errors.js';
-
-const NativeCurl = nativeBinding.Curl as { new (): any };
-const NativeCurlOpt = nativeBinding.CurlOpt as any;
+import type { CurlHandle } from './types.js';
 
 // WebSocket frame flags (matching libcurl CURLWS_*)
 export const WS_TEXT = 1;
@@ -42,7 +41,7 @@ export interface CurlWebSocketOptions {
 }
 
 export class CurlWebSocket extends EventEmitter {
-  private _handle: any;
+  private _handle: CurlHandle;
   private _url: string;
   private _options: CurlWebSocketOptions;
   private _connected = false;
@@ -53,10 +52,10 @@ export class CurlWebSocket extends EventEmitter {
     super();
     this._url = url;
     this._options = options;
-    this._handle = new NativeCurl();
+    this._handle = new nativeBinding.Curl();
 
     // Configure
-    this._handle.setoptStr(NativeCurlOpt.Url, url);
+    this._handle.setoptStr(CurlOpt.Url, url);
 
     if (options.impersonate) {
       this._handle.impersonateStr(
@@ -70,26 +69,26 @@ export class CurlWebSocket extends EventEmitter {
       for (const [k, v] of Object.entries(options.headers)) {
         list.push(`${k}: ${v}`);
       }
-      this._handle.setoptList(NativeCurlOpt.HttpHeader, list);
+      this._handle.setoptList(CurlOpt.HttpHeader, list);
     }
 
     if (options.timeout) {
       this._handle.setoptLong(
-        NativeCurlOpt.ConnectTimeoutMs,
+        CurlOpt.ConnectTimeoutMs,
         Math.floor(options.timeout * 1000),
       );
     }
 
     if (options.proxy) {
-      this._handle.setoptStr(NativeCurlOpt.Proxy, options.proxy);
+      this._handle.setoptStr(CurlOpt.Proxy, options.proxy);
     }
 
     if (options.verify === false) {
-      this._handle.setoptLong(NativeCurlOpt.SslVerifyPeer, 0);
-      this._handle.setoptLong(NativeCurlOpt.SslVerifyHost, 0);
+      this._handle.setoptLong(CurlOpt.SslVerifyPeer, 0);
+      this._handle.setoptLong(CurlOpt.SslVerifyHost, 0);
     }
 
-    this._handle.setoptLong(NativeCurlOpt.FollowLocation, 1);
+    this._handle.setoptLong(CurlOpt.FollowLocation, 1);
   }
 
   /** Whether the WebSocket is currently connected. */

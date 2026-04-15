@@ -8,6 +8,8 @@
  * available, it falls back to loading a locally compiled binary.
  */
 
+import type { NativeBinding } from './types.js';
+
 const platformPackages: Record<string, string> = {
   'linux-x64-gnu': '@curl-cffi-node/linux-x64-gnu',
   'linux-x64-musl': '@curl-cffi-node/linux-x64-musl',
@@ -52,14 +54,14 @@ function isMuslLibc(): boolean {
   }
 }
 
-function loadNativeBinding(): Record<string, unknown> {
+function loadNativeBinding(): NativeBinding {
   const platformKey = getPlatformKey();
   const packageName = platformPackages[platformKey];
 
   // Try 1: Load from platform-specific npm package
   if (packageName) {
     try {
-      return require(packageName);
+      return require(packageName) as NativeBinding;
     } catch {
       // Platform package not installed, try local binary
     }
@@ -67,7 +69,7 @@ function loadNativeBinding(): Record<string, unknown> {
 
   // Try 2: Load locally compiled binary (development mode)
   try {
-    return require(`../curl-cffi-node.${platformKey}.node`);
+    return require(`../curl-cffi-node.${platformKey}.node`) as NativeBinding;
   } catch {
     // Local binary not found
   }
@@ -79,7 +81,7 @@ function loadNativeBinding(): Record<string, unknown> {
     const rootDir = join(__dirname, '..');
     const nodeFiles = readdirSync(rootDir).filter((f: string) => f.endsWith('.node'));
     if (nodeFiles.length > 0) {
-      return require(join(rootDir, nodeFiles[0]));
+      return require(join(rootDir, nodeFiles[0])) as NativeBinding;
     }
   } catch {
     // No .node files found
@@ -93,4 +95,4 @@ function loadNativeBinding(): Record<string, unknown> {
   );
 }
 
-export const nativeBinding = loadNativeBinding();
+export const nativeBinding: NativeBinding = loadNativeBinding();

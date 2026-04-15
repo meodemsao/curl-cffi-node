@@ -41,7 +41,7 @@
     "build:debug": "napi build --package curl-cffi-node-native --platform --output-dir . && npm run build:ts",
     "build:ts": "tsc -p tsconfig.json && npm run build:esm",
     "build:esm": "cp lib/index.mjs dist/index.mjs",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepublishOnly": "npm run build:ts && napi prepublish -t npm",
     "test": "vitest run",
     "test:unit": "vitest run __tests__/unit",
     "test:integration": "vitest run --config vitest.integration.config.ts",
